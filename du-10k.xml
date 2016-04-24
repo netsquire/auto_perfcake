@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scenario xmlns="urn:perfcake:scenario:5.0">
+
+    <run type="${perfcake.run.type:iteration}" value="${perfcake.run.duration:100000}"/>
+    <generator class="DefaultMessageGenerator" threads="${perfcake.thread.count:1}" />
+    
+    <sender class="HttpSender">
+        <target>http://${server.host}:${server.port}/hawkular/metrics/gauges/data</target>
+        <property name="method" value="POST"/>
+        <property name="expectedResponseCodes" value="200"/>
+    </sender>
+
+    <reporting>
+        <reporter class="WarmUpReporter">
+          <property name="minimalWarmUpDuration" value="${perfcake.warmup.duration:120000}"/>
+        </reporter>
+
+        <reporter class="ThroughputStatsReporter">
+            <destination class="CsvDestination">
+                <period type="time" value="30000"/>
+                <property name="path" value="/home/hudson/disk-usage/${perfcake.scenario}-throughput-stats.csv"/>
+                <property name="appendStrategy" value="overwrite"/>
+                <property name="delimiter" value=","/>
+            </destination>
+            <destination class="ConsoleDestination">
+                <period type="time" value="30000" />
+            </destination>
+        </reporter>
+
+        <reporter class="ResponseTimeStatsReporter">
+            <destination class="CsvDestination">
+                <period type="time" value="30000"/>
+                <property name="path" value="/home/hudson/disk-usage/${perfcake.scenario}-response-stats.csv"/>
+                <property name="appendStrategy" value="overwrite"/>
+                <property name="delimiter" value=","/>
+            </destination>
+            <destination class="ChartDestination">
+                <period type="time" value="10000"/>
+                <property name="name" value="Response Time"/>
+                <property name="group" value="rt"/>
+                <property name="yAxis" value="Response Time [ms]"/>
+                <property name="attributes" value="Result,Average"/>
+            </destination>
+            <destination class="ConsoleDestination">
+                <period type="time" value="30000"/>
+            </destination>
+        </reporter>
+
+   </reporting>
+
+   <messages>
+       <message uri="disk-usage.json">
+           <header name="Content-Type" value="application/json"/>
+           <header name="Hawkular-Tenant" value="@{ThreadId}" />
+       </message>
+   </messages>
+</scenario>

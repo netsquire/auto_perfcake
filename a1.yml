@@ -1,0 +1,56 @@
+---
+-
+  hosts: cassandras
+  gather_facts: no
+  remote_user: hudson
+  vars:
+      duration: 1000
+      server_port: 8080
+      hawkular_host: 10.16.23.102
+      datapoints_count: 1
+      perfcake_thread_count: 1
+      servers_to_monitor: "{{ groups['cassandras'] }}"
+
+  tasks:
+    - name: flush 1
+      shell: cassandra/bin/nodetool flush
+    - name: fetch  1 fs info
+      shell: du -bs ~hudson/cassandra/data | cut -f1
+      register: mk1
+    - set_fact:
+          mkout1: "{{ mk1.stdout }}"
+    - debug:
+        msg="{{mkout1}}"
+
+    - name: Run local PerfCake scenario
+      local_action: > 
+                command /home/hudson/perfcake-current/bin/perfcake.sh 
+                -s du-10k.xml 
+                -Dperfcake.run.duration={{ duration }}
+                -sd /home/hudson 
+                -md /home/hudson 
+                -Dserver.host={{ hawkular_host }} 
+                -Dserver.port={{ server_port }} 
+                -Dperfcake.fail.fast=true 
+                -Dperfcake.thread.count=1 
+                -Ddatapoints.count=1
+      register: perfcake
+
+    - name: flush 2
+      shell: cassandra/bin/nodetool flush
+    - name: fetch  2 fs info
+      shell: du -bs ~hudson/cassandra/data | cut -f1
+      register: mk2
+
+    - set_fact:
+          mkout2: "{{ mk2.stdout }}"
+    - debug:
+        msg="{{mkout2}}"
+
+    - set_fact: diff= ( {{ mkout2 }} - {{ mkout1 }} ) 
+
+    - local_action: template 
+            src=~/du.j2 
+            dest=~/formatted_output
+
+

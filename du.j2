@@ -1,0 +1,15 @@
+
+
+Running on: {{ ansible_host }}
+PerfCake run. Duration = {{ duration }} iterations
+
+
+{% for host in groups['cassandras'] %}
+    ===========================
+          IP = {{ host }}
+    measure1 = {{ mkout1 }} bytes
+    measure2 = {{ mkout2 }} bytes
+        diff = {{ diff }} bytes
+
+{% endfor %}
+
