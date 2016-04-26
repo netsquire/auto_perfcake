@@ -4,7 +4,7 @@
   gather_facts: no
   remote_user: hudson
   vars:
-      duration: 1000
+      duration: 10000
       server_port: 8080
       hawkular_host: 10.16.23.102
       datapoints_count: 1
@@ -36,8 +36,6 @@
                 -Ddatapoints.count=1
       register: perfcake
 
-    - name: flush 2
-      shell: cassandra/bin/nodetool flush
     - name: fetch  2 fs info
       shell: du -bs ~hudson/cassandra/data | cut -f1
       register: mk2
@@ -47,10 +45,13 @@
     - debug:
         msg="{{mkout2}}"
 
-    - set_fact: diff= ( {{ mkout2 }} - {{ mkout1 }} ) 
+    - set_fact: diff="$(( mkout2 - mkout1 ))"
 
     - local_action: template 
             src=~/du.j2 
-            dest=~/formatted_output
+            dest=~/pre_format.sh
 
+    - local_action: shell sh ~/pre_format.sh > du_results
+    - local_action: shell cat du_results
 
+#########################################################################
